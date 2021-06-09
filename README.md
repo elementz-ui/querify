@@ -22,8 +22,10 @@ querify = Querify(
 	}
 )
 
-print(
-	querify.build(
+# items_sql - SQL query to get filtered items with the current limit & offset
+# total_sql - SQL query to get the total count of filtered items
+
+items_sql, total_sql = querify.build(
 		0, # Offset
 		10, # Limit
 		searching="john", # Searching? 
@@ -40,8 +42,10 @@ print(
 			'type': False,
 			'column': 'age'
 		}
-	)
 )
+	
+print(items_sql)
+
 ```
 
 The above code returns

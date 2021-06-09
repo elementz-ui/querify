@@ -103,7 +103,7 @@ class Querify:
 					raise QuerifyException("Column not allowed: %s" % sort_column)
 
 				others.append(
-					"ORDER BY `{}` {}".format(self.escape_string(sort_column), sort_type))
+					"ORDER BY `{}` {}".format(self.escape_string(sort_column), sort_type)
 				)
 
 			others.extend([
@@ -111,29 +111,52 @@ class Querify:
 				"OFFSET {}".format(int(offset))
 			])
 
-			sql = "{} {}".format(' AND '.join(conditions), ' '.join(others))
+			conditions_sql = ' AND '.join(conditions)
+			others_sql = ' '.join(others)
+			sql = "{} {}".format(conditions_sql, others_sql)
+			total_sql = None
 
 			if self.table_name:
-				sql = "SELECT * FROM `{}`{}{}".format(self.table_name, (" WHERE " if len(conditions) else ""), sql)
+				hasConditions =  (" WHERE " if len(conditions) else "")
+				sql = "SELECT * FROM `{}`{}{}".format(self.table_name, hasConditions, sql)
+				total_sql = "SELECT count(*) as total FROM `{}`{}{}".format(self.table_name, hasConditions, conditions_sql)
 
-			return sql
+			return [sql, total_sql]
 
 	
-	
-qm = Querify(
+''' Example
+querify = Querify(
 	table_name="users",
-	search_fields=('first','last','country'),
-	allowed_columns=['first','last','age','country','phone'],
-	custom_filters=None
-)
-print(qm.build(0, 10, filters={
-	'first':{
-		'positive': ['lol', 'bro', 'wgat'],
-		'negative': ['man']
-	},
-	'country':{
-		'negative': ['london']
+	search_fields=('first','last','country'), # Searchable fields if we support searching 
+	allowed_columns=['first','last','age','country','phone'], # Allowed filterable columns to prevent malicious injections
+	custom_filters={  # Parsers for custom filters | By default a positive filter would be something like this "`age` = '[filter]'"
+		'age':{
+			'positive': {
+				'Between 18 and 25': '(`age` > 18 AND `age` < 25)' 
+			}
+		}
 	}
-	},
-	search="ok"
-))
+)
+
+print(
+	querify.build(
+		0, # Offset
+		10, # Limit
+		search="john", # Searching? 
+		filters={ # Filters
+			'first':{
+				'positive': ['josh', 'paul', 'john'],
+				'negative': ['maria']
+			},
+			'age':{
+				'positive': ['Between 18 and 25']
+			}
+		},
+		sort={ # Sorting
+			'type': False,
+			'column': 'age'
+		}
+	)
+)
+
+'''
