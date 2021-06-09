@@ -7,7 +7,7 @@ This is a small module for parsing Elementz Table remote data options (such as f
 ## Usage
 
 ```python
-import Querify from elementz_querify
+from elementz_querify import Querify, QuerifyException 
 
 querify = Querify(
 	table_name="users",
