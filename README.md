@@ -1,6 +1,9 @@
 # Querify
 This is a small module for parsing Elementz Table remote data options (such as filters, sorting, searching, offset, limit) and building SQL queries
 
+## Install
+`pip install elementz_querify`
+
 ## Usage
 
 ```python
