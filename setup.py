@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='elementz_querify',
-    version='1.0.0',
+    version='1.0.1',
     description='SQL Query Builder for Elementz Table',
     long_description='',
     license='GPL 3.0',
