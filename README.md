@@ -28,7 +28,7 @@ querify = Querify(
 items_sql, total_sql = querify.build(
 		0, # Offset
 		10, # Limit
-		searching="john", # Searching? 
+		searching="united", # Searching? 
 		filters={ # Filters
 			'first':{
 				'positive': ['josh', 'paul', 'john'],
@@ -52,9 +52,9 @@ The above code returns
 
 ```sql
 SELECT * FROM `users` WHERE 
-'john' IN (`first`, `last`, `country`) 
-AND `first` = "josh" AND `first` = "paul" AND `first` = "john" AND `first` != "maria" 
+`first` = "josh" AND `first` = "paul" AND `first` = "john" AND `first` != "maria" 
 AND (`age` > 18 AND `age` < 25) 
+AND (`first` LIKE "%united%" OR `last` LIKE "%united%" OR `country` LIKE "%united%") 
 ORDER BY `age` DESC 
 LIMIT 10 OFFSET 0
 ```

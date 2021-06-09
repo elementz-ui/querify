@@ -29,11 +29,7 @@ class Querify:
 		if isinstance(search_fields, tuple):
 			search_fields = [*search_fields]
 		
-		self.search_fields = (
-			', '.join(
-				['`' + self.escape_string(sf) + '`' for sf in search_fields]
-				)
-		) if (
+		self.search_fields = search_fields if (
 			search_fields and isinstance(search_fields,list)
 		) else None
 
@@ -75,12 +71,6 @@ class Querify:
 			conditions = []
 			others = []
 
-			if search and self.search_fields:
-				search_fields = self.search_fields
-				conditions.append(
-					"'{}' IN ({})".format(self.escape_string(search), search_fields)
-				)
-
 			if filters and isinstance(filters, dict):
 				for col in filters:
 					if self.allowed_columns and col not in self.allowed_columns:
@@ -95,6 +85,18 @@ class Querify:
 						conditions.extend(
 							self.parse_filter(filters, col, "negative")
 						)
+			
+			if search and self.search_fields:
+				search_fields = self.search_fields
+				search_conditions = []
+				for sf in search_fields:
+					search_conditions.append(
+						"`{}` LIKE \"%{}%\"".format(self.escape_string(sf), self.escape_string(search))
+					)
+
+				conditions.append(
+					"({})".format(' OR '.join(search_conditions))
+				)
 
 			if sort and isinstance(sort, dict) and "type" in sort and "column" in sort:
 				sort_type = "DESC" if not sort["type"] else "ASC"
@@ -124,7 +126,7 @@ class Querify:
 			return [sql, total_sql]
 
 	
-''' Example
+''' Test
 querify = Querify(
 	table_name="users",
 	search_fields=('first','last','country'), # Searchable fields if we support searching 
