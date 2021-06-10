@@ -12,7 +12,7 @@ class QuerifyException(Exception):
 
 class Querify:
 
-	def __init__(self, table_name=None, custom_filters=None, allowed_columns=None, search_fields=None):
+	def __init__(self, table_name=None, custom_filters=None, allowed_columns=None, search_fields=None, column_escape='`', table_escape='`'):
 
 		self.table_name = table_name if (
 			table_name and isinstance(table_name,str)
@@ -32,6 +32,9 @@ class Querify:
 		self.search_fields = search_fields if (
 			search_fields and isinstance(search_fields,list)
 		) else None
+
+		self.column_escape = column_escape
+		self.table_escape = table_escape
 
 		pass
 
@@ -62,7 +65,7 @@ class Querify:
 				continue
 			
 			filters.append(
-				"`{}` {} \"{}\"".format(self.escape_string(col),filter_sign, self.escape_string(f))	
+				"{}{}{} {} \"{}\"".format(self.column_escape, self.escape_string(col), self.column_escape, filter_sign, self.escape_string(f))	
 			)
 
 		return filters
@@ -91,7 +94,7 @@ class Querify:
 				search_conditions = []
 				for sf in search_fields:
 					search_conditions.append(
-						"`{}` LIKE \"%{}%\"".format(self.escape_string(sf), self.escape_string(search))
+						"{}{}{} LIKE \"%{}%\"".format(self.column_escape, self.escape_string(sf), self.column_escape, self.escape_string(search))
 					)
 
 				conditions.append(
@@ -105,7 +108,7 @@ class Querify:
 					raise QuerifyException("Column not allowed: %s" % sort_column)
 
 				others.append(
-					"ORDER BY `{}` {}".format(self.escape_string(sort_column), sort_type)
+					"ORDER BY {}{}{} {}".format(self.column_escape, self.escape_string(sort_column), self.column_escape,  sort_type)
 				)
 
 			others.extend([
@@ -120,8 +123,8 @@ class Querify:
 
 			if self.table_name:
 				hasConditions =  (" WHERE " if len(conditions) else "")
-				sql = "SELECT * FROM `{}`{}{}".format(self.table_name, hasConditions, sql)
-				total_sql = "SELECT count(*) as total FROM `{}`{}{}".format(self.table_name, hasConditions, conditions_sql)
+				sql = "SELECT * FROM {}{}{}{}{}".format(self.table_escape, self.table_name, self.table_escape, hasConditions, sql)
+				total_sql = "SELECT count(*) as total FROM {}{}{}{}{}".format(self.table_escape, self.table_name, self.table_escape, hasConditions, conditions_sql)
 
 			return [sql, total_sql]
 
