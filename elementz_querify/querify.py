@@ -12,7 +12,7 @@ class QuerifyException(Exception):
 
 class Querify:
 
-	def __init__(self, table_name=None, custom_filters=None, allowed_columns=None, search_fields=None, column_escape='`', table_escape=''):
+	def __init__(self, table_name=None, custom_filters=None, allowed_columns=None, search_fields=None, search_ci=False, column_escape='`', table_escape=''):
 
 		self.table_name = table_name if (
 			table_name and isinstance(table_name,str)
@@ -33,6 +33,7 @@ class Querify:
 			search_fields and isinstance(search_fields,list)
 		) else None
 
+		self.search_ci = search_ci
 		self.column_escape = column_escape
 		self.table_escape = table_escape
 
@@ -93,8 +94,9 @@ class Querify:
 				search_fields = self.search_fields
 				search_conditions = []
 				for sf in search_fields:
+					search_ci = ' COLLATE UTF8_GENERAL_CI ' if self.search_ci else '' # Case Insesitive Search
 					search_conditions.append(
-						"{}{}{} LIKE '%{}%'".format(self.column_escape, self.escape_string(sf), self.column_escape, self.escape_string(search))
+						"{}{}{}{} LIKE '%{}%'".format(self.column_escape, self.escape_string(sf), self.column_escape, search_ci, self.escape_string(search))
 					)
 
 				conditions.append(
