@@ -77,6 +77,8 @@ class Querify:
 
 			if filters and isinstance(filters, dict):
 				for col in filters:
+					if not filters[col]:
+						continue
 					if self.allowed_columns and col not in self.allowed_columns:
 						raise QuerifyException("Column not allowed: %s" % col)
 
@@ -103,7 +105,7 @@ class Querify:
 					"({})".format(' OR '.join(search_conditions))
 				)
 
-			if sort and isinstance(sort, dict) and "type" in sort and "column" in sort:
+			if sort and isinstance(sort, dict) and "type" in sort and "column" in sort and sort["column"]:
 				sort_type = "DESC" if not sort["type"] else "ASC"
 				sort_column = sort["column"]
 				if self.allowed_columns and sort_column not in self.allowed_columns:
