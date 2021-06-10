@@ -12,7 +12,7 @@ class QuerifyException(Exception):
 
 class Querify:
 
-	def __init__(self, table_name=None, custom_filters=None, allowed_columns=None, search_fields=None, column_escape='`', table_escape='`'):
+	def __init__(self, table_name=None, custom_filters=None, allowed_columns=None, search_fields=None, column_escape='`', table_escape=''):
 
 		self.table_name = table_name if (
 			table_name and isinstance(table_name,str)
@@ -65,7 +65,7 @@ class Querify:
 				continue
 			
 			filters.append(
-				"{}{}{} {} \"{}\"".format(self.column_escape, self.escape_string(col), self.column_escape, filter_sign, self.escape_string(f))	
+				"{}{}{} {} '{}'".format(self.column_escape, self.escape_string(col), self.column_escape, filter_sign, self.escape_string(f))	
 			)
 
 		return filters
@@ -94,7 +94,7 @@ class Querify:
 				search_conditions = []
 				for sf in search_fields:
 					search_conditions.append(
-						"{}{}{} LIKE \"%{}%\"".format(self.column_escape, self.escape_string(sf), self.column_escape, self.escape_string(search))
+						"{}{}{} LIKE '%{}%'".format(self.column_escape, self.escape_string(sf), self.column_escape, self.escape_string(search))
 					)
 
 				conditions.append(
