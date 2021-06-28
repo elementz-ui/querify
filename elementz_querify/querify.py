@@ -12,27 +12,37 @@ class QuerifyException(Exception):
 
 class Querify:
 
-	def __init__(self, table_name=None, custom_filters=None, allowed_columns=None, search_fields=None, search_ci=False, column_escape='`', table_escape=''):
+	def __init__(self, 
+			table_name=None,  
+			filterable_columns=None, 
+			searchable_columns=None, 
+			custom_filters=None, 
+			custom_search=None, 
+			search_ci=False, 
+			column_escape='`', 
+			table_escape=''
+		):
 
 		self.table_name = table_name if (
 			table_name and isinstance(table_name,str)
 		) else None
 		
-		self.allowed_columns = allowed_columns if (
-			allowed_columns and isinstance(allowed_columns,list)
+		self.filterable_columns = filterable_columns if (
+			filterable_columns and isinstance(filterable_columns,list)
 		) else None
 
-		self.custom_filters =custom_filters if (
+		self.searchable_columns = searchable_columns if (
+			searchable_columns and isinstance(searchable_columns,list)
+		) else None
+
+		self.custom_filters = custom_filters if (
 			custom_filters and isinstance(custom_filters,dict)
 		) else None
 
-		if isinstance(search_fields, tuple):
-			search_fields = [*search_fields]
-		
-		self.search_fields = search_fields if (
-			search_fields and isinstance(search_fields,list)
+		self.custom_search = custom_search if (
+			custom_search and (isinstance(custom_search, dict) or callable(custom_search))
 		) else None
-
+		
 		self.search_ci = search_ci
 		self.column_escape = column_escape
 		self.table_escape = table_escape
@@ -61,7 +71,7 @@ class Querify:
 				and f in custom_filters[col][filter_type]
 			):
 				filters.append(
-					custom_filters[col][filter_type][f]
+					"(%s)" % custom_filters[col][filter_type][f]
 				)
 				continue
 			
@@ -79,7 +89,7 @@ class Querify:
 				for col in filters:
 					if not filters[col]:
 						continue
-					if self.allowed_columns and col not in self.allowed_columns:
+					if self.filterable_columns and col not in self.filterable_columns:
 						raise QuerifyException("Column not allowed: %s" % col)
 
 					if "positive" in filters[col] and isinstance(filters[col]["positive"], list):
@@ -92,23 +102,29 @@ class Querify:
 							self.parse_filter(filters, col, "negative")
 						)
 			
-			if search and self.search_fields:
-				search_fields = self.search_fields
-				search_conditions = []
-				for sf in search_fields:
-					search_ci = ' COLLATE UTF8_GENERAL_CI ' if self.search_ci else '' # Case Insesitive Search
-					search_conditions.append(
-						"{}{}{}{} LIKE '%{}%'".format(self.column_escape, self.escape_string(sf), self.column_escape, search_ci, self.escape_string(search))
+			if search and (self.searchable_columns or callable(self.custom_search)):
+				if callable(self.custom_search):
+					conditions.append(
+						"({})".format(self.custom_search(search))
 					)
+				else:
+					search_fields = self.searchable_columns
+					search_conditions = []
 
-				conditions.append(
-					"({})".format(' OR '.join(search_conditions))
-				)
+					for sf in search_fields:
+						search_ci = ' COLLATE UTF8_GENERAL_CI ' if self.search_ci else '' # Case Insesitive Search
+						search_conditions.append(
+							"{}{}{}{} LIKE '%{}%'".format(self.column_escape, self.escape_string(sf), self.column_escape, search_ci, self.escape_string(search))
+						)
+
+					conditions.append(
+						"({})".format(' OR '.join(search_conditions))
+					)
 
 			if sort and isinstance(sort, dict) and "type" in sort and "column" in sort and sort["column"]:
 				sort_type = "DESC" if not sort["type"] else "ASC"
 				sort_column = sort["column"]
-				if self.allowed_columns and sort_column not in self.allowed_columns:
+				if self.filterable_columns and sort_column not in self.filterable_columns:
 					raise QuerifyException("Column not allowed: %s" % sort_column)
 
 				others.append(
@@ -136,8 +152,8 @@ class Querify:
 ''' Test
 querify = Querify(
 	table_name="users",
-	search_fields=('first','last','country'), # Searchable fields if we support searching 
-	allowed_columns=['first','last','age','country','phone'], # Allowed filterable columns to prevent malicious injections
+	searchable_columns=('first','last','country'), # Searchable fields if we support searching 
+	filterable_columns=['first','last','age','country','phone'], # Allowed filterable columns to prevent malicious injections
 	custom_filters={  # Parsers for custom filters | By default a positive filter would be something like this "`age` = '[filter]'"
 		'age':{
 			'positive': {
