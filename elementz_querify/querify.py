@@ -13,7 +13,8 @@ class QuerifyException(Exception):
 class Querify:
 
 	def __init__(self, 
-			table_name=None,  
+			table,
+			columns=None,
 			filterable_columns=None, 
 			searchable_columns=None, 
 			custom_filters=None, 
@@ -23,10 +24,17 @@ class Querify:
 			table_escape=''
 		):
 
-		self.table_name = table_name if (
-			table_name and isinstance(table_name,str)
+		self.table_name = table if (
+			table and isinstance(table,str)
 		) else None
-		
+
+		if not self.table_name:
+			raise QuerifyException("Table name is invalid")
+
+		self.columns = columns if (
+			columns and isinstance(columns,list)
+		) else None
+
 		self.filterable_columns = filterable_columns if (
 			filterable_columns and isinstance(filterable_columns,list)
 		) else None
@@ -46,7 +54,7 @@ class Querify:
 		self.search_ci = search_ci
 		self.column_escape = column_escape
 		self.table_escape = table_escape
-
+		
 		pass
 
 	
@@ -114,7 +122,7 @@ class Querify:
 					for sf in search_fields:
 						search_ci = ' COLLATE UTF8_GENERAL_CI ' if self.search_ci else '' # Case Insesitive Search
 						search_conditions.append(
-							"{}{}{}{} LIKE '%{}%'".format(self.column_escape, self.escape_string(sf), self.column_escape, search_ci, self.escape_string(search))
+							"{}{}{}{} LIKE '%%{}%%'".format(self.column_escape, self.escape_string(sf), self.column_escape, search_ci, self.escape_string(search))
 						)
 
 					conditions.append(
@@ -143,7 +151,14 @@ class Querify:
 
 			if self.table_name:
 				hasConditions =  (" WHERE " if len(conditions) else "")
-				sql = "SELECT * FROM {}{}{}{}{}".format(self.table_escape, self.table_name, self.table_escape, hasConditions, sql)
+				sql = "SELECT {} FROM {}{}{}{}{}".format(
+					', '.join([
+						'{}{}{}'.format(self.column_escape, column, self.column_escape) for column in self.columns
+					]) if self.columns else '*',
+					self.table_escape, self.table_name, self.table_escape,
+					hasConditions, 
+					sql
+				)
 				total_sql = "SELECT count(*) as total FROM {}{}{}{}{}".format(self.table_escape, self.table_name, self.table_escape, hasConditions, conditions_sql)
 
 			return [sql, total_sql]
@@ -151,7 +166,8 @@ class Querify:
 	
 ''' Test
 querify = Querify(
-	table_name="users",
+	table="users",
+	columns=['id','username','email','first_name','last_name',]
 	searchable_columns=('first','last','country'), # Searchable fields if we support searching 
 	filterable_columns=['first','last','age','country','phone'], # Allowed filterable columns to prevent malicious injections
 	custom_filters={  # Parsers for custom filters | By default a positive filter would be something like this "`age` = '[filter]'"
